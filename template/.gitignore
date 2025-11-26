@@ -1,0 +1,5 @@
+*.dSYM
+build/
+*-build
+*.o
+*.mp3
