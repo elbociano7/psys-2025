@@ -16,26 +16,17 @@ int main(int argc, char *argv[])
   }
 
   char *pipename = argv[1];
-
-  printf("Checking for pipe '%s'...\n", pipename);
-
   while (access(pipename, F_OK) == -1) {
-      printf("Pipe not found, waiting...\n");
-      sleep(1);
+    sleep(1);
   }
 
-  printf("Opening pipe for reading...\n");
-  
   int fd = open(pipename, O_RDONLY);
   if (fd == -1)
   {
     perror("Error opening pipe");
     return 3;
   }
-
-  printf("Connected! Waiting for data...\n");
-
-  char buffer[16];
+  char buffer[128];
   ssize_t bytes_read;
 
   while (1)
@@ -58,7 +49,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-    sleep(10);
+    sleep(5);
   }
 
   close(fd);

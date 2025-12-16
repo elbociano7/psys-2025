@@ -33,9 +33,7 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         ch = getchar();
-        if (ch == '\n') continue;
-
-        memset(command, 0, sizeof(command));
+        if(ch == '\n') continue;
 
         if (ch == 'p') {
             snprintf(command, sizeof(command), "pause\n");
