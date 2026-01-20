@@ -10,6 +10,7 @@ void close_pipes(int unused[2], int used[2], int close_end) {
 	close(unused[0]);
 	close(unused[1]);
 	close(used[close_end]);
+
 }
 
 int main(int argc, char ** argv) {

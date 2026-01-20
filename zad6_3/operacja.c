@@ -5,9 +5,19 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 
-#define SHM_PATH "/tmp/bank283811"
-#define PROJ_ID 283811
+#define SHM_KEY 283811
+
+void sem_lock(int semid) {
+	struct sembuf sb = {0, -1, 0};
+	semop(semid, &sb, 1);
+}
+
+void sem_unlock(int semid) {
+	struct sembuf sb = {0, 1, 0};
+	semop(semid, &sb, 1);
+}
 
 int main(int argc, char** argv) {
     if(argc < 3) {
@@ -16,14 +26,8 @@ int main(int argc, char** argv) {
     }
 
     const size_t SHM_SIZE = sizeof(int);
-    key_t key = ftok(SHM_PATH, PROJ_ID);
 
-    if(key == -1) {
-        perror("SHM key fail");
-        return 2;
-    }
-
-    int shmid = shmget(key, SHM_SIZE, 0); 
+    int shmid = shmget(SHM_KEY, SHM_SIZE, 0); 
     
     if(shmid == -1) {
         perror("SHM open fail");
@@ -39,35 +43,51 @@ int main(int argc, char** argv) {
         pid_t pid = fork();
 
         if(pid > 0) {
-            if(i == num - 1) {
-                wait(NULL); 
-            }
-        } else if(pid == 0) {
+		} else if(pid == 0) {
             printf("child %d\n", i);
             void* shm_ptr = shmat(shmid, NULL, 0);
-            
             // cast do void* poniewaz taki jest typ zwracany przez shmat()
             if(shm_ptr == (void*)-1) {
                 perror("shmat error");
-                return 1;
+                exit(1);
             }
 
-            int* bank_value = (int*)shm_ptr;
-            *bank_value += value;
+			int* bank_value = (int*) shm_ptr;
+
+			//Wersja najbezpieczniejsza (praktycznie nie powoduje bledow bo jest to bardzo szybka operacja)
+            
+			//*bank_value += value;			
+
+			//Wersja z wymuszonymi bledami do zaprezentowania
+			
+			int temp_bank_value = *bank_value + value;
+
+			usleep(1000);
+
+			*bank_value = temp_bank_value;
+
+			//Powrot do "normalnego" kodu	
+				
+			printf("[%d] (%d) Balance: %d\n", i, value, *bank_value);
+
 
             if(shmdt(shm_ptr) == -1) {
                 perror("shmdt error");
-                return 2;
+                exit(2);
             }
 
             printf("Child %d end.\n", i);
-            return 0;
+            exit(0);
         } else {
             printf("Fork error");
-            return 1;
+            exit(1);
         }
     }
-    
+   
+	for(int j = 0; j < num; j++) {
+		wait(NULL);
+	}
+
     printf("Parent exit\n");
     return 0;
 }
